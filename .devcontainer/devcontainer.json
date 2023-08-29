@@ -1,0 +1,39 @@
+{
+  "name": "bcratos_dev",
+  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+  "build": {
+    "dockerfile": "../docker/Dockerfile",
+    "context": ".."
+  },
+
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  // "features": {},
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  "forwardPorts": [
+    3000
+  ],
+
+  // Use 'postCreateCommand' to run commands after the container is created.
+  // "postCreateCommand": "uname -a",
+
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "streetsidesoftware.code-spell-checker"
+      ]
+    }
+  },
+
+  "remoteUser": "root"
+
+  // the arguments below are defined to run this container with the ability of real time premption
+  // they are defined here: https://github.com/2b-t/docker-realtime#13-launching-the-docker
+  "runArgs": [
+    //"--cpu-rt-runtime=0",
+    //"--ulimit rtprio=99",
+    "--cap-add=sys_nice",
+    "--network=host"
+  ]
+}
