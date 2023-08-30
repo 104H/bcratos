@@ -8,6 +8,13 @@
 
 #include "common.h"
 
+#include <libserial/SerialPort.h>
+#include <libserial/SerialStream.h>
+
+#include <iostream>
+#include <unistd.h>
+
+constexpr const char* const SERIAL_PORT = "/dev/ttyUSB0" ;
 double position(double start_angle, double end_angle, double time,
                 double time_now) {
   // double a_0 = start_angle;
@@ -18,6 +25,15 @@ double position(double start_angle, double end_angle, double time,
          (a_3 * (time_now * time_now * time_now));
 }
 
+void connect_to_hand(const std::string& serialport, LibSerial::SerialPort& serial_port)
+{
+    // Open the hardware serial ports.
+    serial_port.Open( serialport ) ;
+
+    // Set the baud rate.
+    serial_port.SetBaudRate( LibSerial::BaudRate::BAUD_115200 ) ;
+}
+
 int main(int argc, char **argv) {
   if (argc != 2) {
     std::cerr << "Usage: " << argv[0] << " <robot-hostname>" << std::endl;
@@ -26,6 +42,9 @@ int main(int argc, char **argv) {
   try {
     franka::Robot robot(argv[1]);
     setDefaultBehavior(robot);
+
+    LibSerial::SerialPort hand_port;
+    connect_to_hand("/dev/ttyUSB0", hand_port);
 
     // First move the robot to a suitable joint configuration
     std::array<double, 7> q_goal = {
@@ -65,7 +84,7 @@ int main(int argc, char **argv) {
 
       robot.control([&initial_position, &time, &movement_duration,
                      &movement_angles,
-                     &i](const franka::RobotState &robot_state,
+                     &i, &hand_port](const franka::RobotState &robot_state,
                          franka::Duration period) -> franka::JointPositions {
         time += period.toSec();
 
@@ -91,6 +110,20 @@ int main(int argc, char **argv) {
 
         if (time >= movement_duration[i]) {
           std::cout << std::endl << "Finished phase " << i << std::endl;
+
+          if (i == 0) {
+            // arm has reached the object, grab object
+            std::cout << std::endl << "Grabbing Object" << std::endl;
+            std::string grab_command = "@AGSM07045++++++*\r" ;
+            hand_port.Write(grab_command);
+
+          } else if (i == 1) {
+            // arm has lifted the object, release object
+            std::cout << std::endl << "Releasing Object" << std::endl;
+            std::string release_command = "@AGSM00045++++++*\r" ;
+            hand_port.Write(release_command);
+          }
+
           return franka::MotionFinished(output);
         }
         return output;

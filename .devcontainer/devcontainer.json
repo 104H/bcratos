@@ -26,14 +26,13 @@
     }
   },
 
-  "remoteUser": "root"
-
   // the arguments below are defined to run this container with the ability of real time premption
   // they are defined here: https://github.com/2b-t/docker-realtime#13-launching-the-docker
   "runArgs": [
-    //"--cpu-rt-runtime=0",
-    //"--ulimit rtprio=99",
     "--cap-add=sys_nice",
-    "--network=host"
-  ]
+    "--network=host",
+    "--device=/dev/ttyUSB0"
+  ],
+
+  "remoteUser": "root"
 }
