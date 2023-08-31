@@ -8,8 +8,16 @@
 
 #include "common.h"
 
+#include <libserial/SerialPort.h>
+#include <libserial/SerialStream.h>
+
+#include <iostream>
+#include <unistd.h>
+
+constexpr const char *const SERIAL_PORT = "/dev/ttyUSB0";
 double position(double start_angle, double end_angle, double time,
-                double time_now) {
+                double time_now)
+{
   // double a_0 = start_angle;
   double a_2 = 3 / (time * time) * (end_angle - start_angle);
   double a_3 = -2 / (time * time * time) * (end_angle - start_angle);
@@ -18,14 +26,29 @@ double position(double start_angle, double end_angle, double time,
          (a_3 * (time_now * time_now * time_now));
 }
 
-int main(int argc, char **argv) {
-  if (argc != 2) {
+void connect_to_hand(const std::string &serialport, LibSerial::SerialPort &serial_port)
+{
+  // Open the hardware serial ports.
+  serial_port.Open(serialport);
+
+  // Set the baud rate.
+  serial_port.SetBaudRate(LibSerial::BaudRate::BAUD_115200);
+}
+
+int main(int argc, char **argv)
+{
+  if (argc != 2)
+  {
     std::cerr << "Usage: " << argv[0] << " <robot-hostname>" << std::endl;
     return -1;
   }
-  try {
+  try
+  {
     franka::Robot robot(argv[1]);
     setDefaultBehavior(robot);
+
+    LibSerial::SerialPort hand_port;
+    connect_to_hand("/dev/ttyUSB0", hand_port);
 
     // First move the robot to a suitable joint configuration
     std::array<double, 7> q_goal = {
@@ -54,19 +77,21 @@ int main(int argc, char **argv) {
     std::array<std::array<double, 7>, 3> movement_angles = {{
         {0, M_PI_4, 0, -0.5 * M_PI, 0, M_PI, M_PI_2},       // reach
         {0, 0.8 * M_PI_4, 0, -0.5 * M_PI, 0, M_PI, M_PI_2}, // lift
-        q_goal // return to zero position
+        q_goal                                              // return to zero position
     }};
     // fastest possible
     // std::array<double, 3> movement_duration = {2.0, 1.0, 2.0};
     std::array<double, 3> movement_duration = {5.0, 1.0, 5.0};
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++)
+    {
       double time = 0.0;
 
       robot.control([&initial_position, &time, &movement_duration,
                      &movement_angles,
-                     &i](const franka::RobotState &robot_state,
-                         franka::Duration period) -> franka::JointPositions {
+                     &i, &hand_port](const franka::RobotState &robot_state,
+                                     franka::Duration period) -> franka::JointPositions
+                    {
         time += period.toSec();
 
         if (time == 0.0) {
@@ -91,12 +116,27 @@ int main(int argc, char **argv) {
 
         if (time >= movement_duration[i]) {
           std::cout << std::endl << "Finished phase " << i << std::endl;
+
+          if (i == 0) {
+            // arm has reached the object, grab object
+            std::cout << std::endl << "Grabbing Object" << std::endl;
+            std::string grab_command = "@AGSM07045++++++*\r" ;
+            hand_port.Write(grab_command);
+
+          } else if (i == 1) {
+            // arm has lifted the object, release object
+            std::cout << std::endl << "Releasing Object" << std::endl;
+            std::string release_command = "@AGSM00045++++++*\r" ;
+            hand_port.Write(release_command);
+          }
+
           return franka::MotionFinished(output);
         }
-        return output;
-      });
+        return output; });
     }
-  } catch (const franka::Exception &e) {
+  }
+  catch (const franka::Exception &e)
+  {
     std::cout << e.what() << std::endl;
     return -1;
   }

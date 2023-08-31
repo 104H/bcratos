@@ -11,7 +11,8 @@ RUN apt-get update && DEBIAN_FRONTEND="noninteractive" \
     cmake \
     git \
     libpoco-dev \
-    libeigen3-dev
+    libeigen3-dev \
+    libserial-dev
 
 RUN git clone --recursive https://github.com/frankaemika/libfranka \
     && cd libfranka \
@@ -25,11 +26,6 @@ RUN git clone --recursive https://github.com/frankaemika/libfranka \
     && dpkg -i libfranka*.deb
 
 ADD grabobject grabobject/
-# RUN cd grabobject \
-#     && mkdir build \
-#     && cd build \
-#     && cmake .. \
-#     && make
 
 RUN useradd -ms /bin/bash developer
 USER developer
