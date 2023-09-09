@@ -10,7 +10,9 @@
   // "features": {},
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  "forwardPorts": [3000],
+  "forwardPorts": [
+    3000
+  ],
 
   // Use 'postCreateCommand' to run commands after the container is created.
   // "postCreateCommand": "uname -a",
@@ -24,20 +26,23 @@
         "vscodevim.vim",
         "esbenp.prettier-vscode"
       ]
-    }
-  },
-
-  "settings": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.organizeImports": true
+    },
+    "settings": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+      }
     }
   },
 
   // the arguments below are defined to run this container with the ability of real time premption
   // they are defined here: https://github.com/2b-t/docker-realtime#13-launching-the-docker
-  "runArgs": ["--cap-add=sys_nice", "--network=host", "--device=/dev/ttyUSB0"],
+  //"runArgs": ["--cap-add=sys_nice", "--network=host", "--device=/dev/ttyUSB0"],
+  "runArgs": [
+    "--cap-add=sys_nice",
+    "--network=host"
+  ],
 
   "remoteUser": "root"
 }

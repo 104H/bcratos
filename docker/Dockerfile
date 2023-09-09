@@ -12,7 +12,8 @@ RUN apt-get update && DEBIAN_FRONTEND="noninteractive" \
     git \
     libpoco-dev \
     libeigen3-dev \
-    libserial-dev
+    libserial-dev \
+    python3-pip
 
 RUN git clone --recursive https://github.com/frankaemika/libfranka \
     && cd libfranka \
@@ -24,6 +25,8 @@ RUN git clone --recursive https://github.com/frankaemika/libfranka \
     && cmake --build . \
     && cpack -G DEB \
     && dpkg -i libfranka*.deb
+
+RUN pip3 install pre-commit
 
 ADD grabobject grabobject/
 
