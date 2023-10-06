@@ -2,7 +2,8 @@
 
 RobotArm::RobotArm(const std::string hand_serial_port,
                    const std::string arm_host_name)
-    : arm(arm_host_name) {
+    : arm(arm_host_name)
+{
   // franka::Robot arm(arm_host_name);
 
   hand.Open(hand_serial_port);
@@ -26,7 +27,8 @@ void RobotArm::gripObject() { hand.Write("@AGSM07045++++++*\r"); }
 void RobotArm::releaseObject() { hand.Write("@AGSM00045++++++*\r"); }
 
 double RobotArm::position(double start_angle, double end_angle, double time,
-                          double time_now) {
+                          double time_now)
+{
   double a_2 = 3 / (time * time) * (end_angle - start_angle);
   double a_3 = -2 / (time * time * time) * (end_angle - start_angle);
 
@@ -34,7 +36,8 @@ double RobotArm::position(double start_angle, double end_angle, double time,
          (a_3 * (time_now * time_now * time_now));
 }
 
-void RobotArm::setDefaultBehavior() {
+void RobotArm::setDefaultBehavior()
+{
   arm.setCollisionBehavior({{20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0}},
                            {{20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0}},
                            {{10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0}},
@@ -47,39 +50,66 @@ void RobotArm::setDefaultBehavior() {
   arm.setCartesianImpedance({{3000, 3000, 3000, 300, 300, 300}});
 }
 
-void RobotArm::moveArm(const std::array<double, 7> &movement_angles,
-                       const double &movement_duration) {
+void RobotArm::reachAndGrab()
+{
   std::array<double, 7> initial_position;
   double time;
 
-  arm.control(
-      [this, &movement_duration, &movement_angles, &time,
-       &initial_position](const franka::RobotState &robot_state,
-                          franka::Duration period) -> franka::JointPositions {
-        time += period.toSec();
+  for (int i = 0; i < 3; i++)
+  {
+    double time = 0.0;
+    auto angles = movement_angles[i];
+    auto duration = movement_duration[i];
 
-        if (time == 0.0) {
-          initial_position = robot_state.q_d;
-        }
+    arm.control(
+        [this, &time,
+         &initial_position, &angles, &duration](const franka::RobotState &robot_state,
+                                                franka::Duration period) -> franka::JointPositions
+        {
+          time += period.toSec();
 
-        double delta_shoulder = position(
-            initial_position[1], movement_angles[1], movement_duration, time);
-        double delta_elbow = position(initial_position[3], movement_angles[3],
-                                      movement_duration, time);
-        double delta_wrist = position(initial_position[5], movement_angles[5],
-                                      movement_duration, time);
+          if (time == 0.0)
+          {
+            initial_position = robot_state.q_d;
+            return franka::JointPositions(initial_position);
+          }
 
-        franka::JointPositions output = {
-            {initial_position[0], initial_position[1] + delta_shoulder,
-             initial_position[2], initial_position[3] + delta_elbow,
-             initial_position[4], initial_position[5] + delta_wrist,
-             initial_position[6]}};
+          double delta_shoulder = position(
+              initial_position[1], angles[1], duration, time);
+          double delta_elbow = position(initial_position[3], angles[3],
+                                        duration, time);
+          double delta_wrist = position(initial_position[5], angles[5],
+                                        duration, time);
 
-        if (time >= movement_duration) {
-          std::cout << std::endl << "Finished phase " << std::endl;
+          franka::JointPositions output = {
+              {initial_position[0], initial_position[1] + delta_shoulder,
+               initial_position[2], initial_position[3] + delta_elbow,
+               initial_position[4], initial_position[5] + delta_wrist,
+               initial_position[6]}};
 
-          return franka::MotionFinished(output);
-        }
-        return output;
-      });
+          if (time >= duration)
+          {
+            std::cout << std::endl
+                      << "Finished phase " << std::endl;
+
+            return franka::MotionFinished(output);
+          }
+          return output;
+        });
+
+    if (i == 0)
+    {
+      // arm has reached the object, grab object
+      std::cout << std::endl
+                << "Grabbing Object" << std::endl;
+      gripObject();
+    }
+    else if (i == 1)
+    {
+      // arm has lifted the object, release object
+      std::cout << std::endl
+                << "Releasing Object" << std::endl;
+      releaseObject();
+    }
+  }
 }
