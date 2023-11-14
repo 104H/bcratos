@@ -30,6 +30,7 @@ private:
 public:
   RobotArm(const std::string hand_serial_port, const std::string arm_host_name);
   void setDefaultBehavior();
+  void moveToStart();
   void gripObject();
   void releaseObject();
   double position(double start_angle, double end_angle, double time,
