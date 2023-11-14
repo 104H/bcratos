@@ -35,5 +35,6 @@ public:
   void releaseObject();
   double position(double start_angle, double end_angle, double time,
                   double time_now);
-  void reachAndGrab();
+  void reachAndGrab(float const extent);
+  const std::array<double, 7> scaleAngles(std::array<double, 7> start_angles, std::array<double, 7> end_angles, const float extent);
 };

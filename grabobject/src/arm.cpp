@@ -89,16 +89,41 @@ void RobotArm::moveToStart()
     return output; });
 }
 
-void RobotArm::reachAndGrab()
+const std::array<double, 7> RobotArm::scaleAngles(std::array<double, 7> start_angles, std::array<double, 7> end_angles, const float extent)
+{
+  std::array<double, 7> scaled_angles;
+  scaled_angles[0] = end_angles[0];
+  scaled_angles[2] = end_angles[2];
+  scaled_angles[4] = end_angles[4];
+  scaled_angles[6] = end_angles[6];
+
+  scaled_angles[1] = (extent * (end_angles[1] - start_angles[1])) + start_angles[1];
+  scaled_angles[3] = (extent * (end_angles[3] - start_angles[3])) + start_angles[3];
+  scaled_angles[5] = (extent * (end_angles[5] - start_angles[5])) + start_angles[5];
+
+  return scaled_angles;
+}
+
+void RobotArm::reachAndGrab(float const extent)
 {
   std::array<double, 7> initial_position;
   double time;
 
   for (int i = 0; i < 3; i++)
   {
-    double time = 0.0;
-    auto angles = movement_angles[i];
-    auto duration = movement_duration[i];
+    double time = 0.0, duration;
+    std::array<double, 7> angles;
+
+    if (i == 0)
+    {
+      angles = scaleAngles(movement_angles[2], movement_angles[i], extent);
+      duration = extent * movement_duration[i];
+    }
+    else
+    {
+      angles = movement_angles[i];
+      duration = movement_duration[i];
+    }
 
     arm.control([this, &time, &initial_position, &angles,
                  &duration](const franka::RobotState &robot_state,
@@ -130,6 +155,12 @@ void RobotArm::reachAndGrab()
         return franka::MotionFinished(output);
       }
       return output; });
+
+    // if the command was not to reach the final position
+    if (extent < 1.0)
+    {
+      return;
+    }
 
     if (i == 0)
     {
