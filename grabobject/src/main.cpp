@@ -15,7 +15,7 @@ int main(int argc, char **argv)
               << "Press Enter to continue..." << std::endl;
     std::cin.ignore();
 
-    arm.reachAndGrab();
+    arm.reachAndGrab(1.);
   }
   catch (const std::exception &e)
   {
