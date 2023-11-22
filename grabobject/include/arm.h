@@ -24,7 +24,7 @@ private:
   }};
 
   // fastest possible
-  // std::array<double, 3> movement_duration = {2.0, 1.0, 2.0};
+  // const std::array<double, 3> movement_duration = {2.0, 1.0, 2.0};
   const std::array<double, 3> movement_duration = {5.0, 1.0, 5.0};
 
 public:
@@ -37,4 +37,5 @@ public:
                   double time_now);
   void reachAndGrab(float const extent);
   const std::array<double, 7> scaleAngles(std::array<double, 7> start_angles, std::array<double, 7> end_angles, const float extent);
+  const double computeExtent (const std::array<double, 7> angles);
 };

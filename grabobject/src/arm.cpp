@@ -116,8 +116,15 @@ void RobotArm::reachAndGrab(float const extent)
 
     if (i == 0)
     {
+      // determine robot pose
+      std::array<double, 7> robot_state = arm.readOnce().q;
+
+      // determine current extent based on current angles
+      double current_extent = computeExtent(robot_state);
+
+      // update extent according to last extent
       angles = scaleAngles(movement_angles[2], movement_angles[i], extent);
-      duration = extent * movement_duration[i];
+      duration = std::abs(current_extent - extent) * movement_duration[i];
     }
     else
     {
@@ -177,4 +184,9 @@ void RobotArm::reachAndGrab(float const extent)
       releaseObject();
     }
   }
+}
+
+const double RobotArm::computeExtent(const std::array<double, 7> angles)
+{
+  return (angles[1] - movement_angles[2][1]) / (movement_angles[0][1] - movement_angles[2][1]);
 }
