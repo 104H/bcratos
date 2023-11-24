@@ -1,8 +1,12 @@
 #include <arm.h>
 #include <stdio.h>
 
+#include <sockpp/udp_socket.h>
+
 int main(int argc, char **argv)
 {
+  uint16_t msg, extent;
+
   try
   {
     RobotArm arm = RobotArm("/dev/ttyUSB0", "172.16.0.2");
@@ -15,8 +19,31 @@ int main(int argc, char **argv)
               << "Press Enter to continue..." << std::endl;
     std::cin.ignore();
 
-    arm.reachAndGrab(.7);
-    arm.reachAndGrab(.1);
+    sockpp::initialize();
+    sockpp::udp_socket sock;
+
+    if (!sock)
+    {
+      std::cerr << "Error creating the UDP socket: " << sock.last_error_str() << std::endl;
+      return -1;
+    }
+
+    if (!sock.bind(sockpp::inet_address("localhost", 1400)))
+    {
+      std::cerr << "Error binding the UDP socket: " << sock.last_error_str() << std::endl;
+      return -1;
+    }
+
+    while (1)
+    {
+      std::cout << "Listening on socket" << std::endl;
+      ssize_t n = sock.recv(&msg, sizeof(msg));
+      std::cout << msg << std::endl;
+
+      extent = msg & 127;
+
+      arm.reachAndGrab((float) extent / 100);
+    }
   }
   catch (const std::exception &e)
   {
