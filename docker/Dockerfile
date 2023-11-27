@@ -29,7 +29,8 @@ RUN git clone --recursive https://github.com/frankaemika/libfranka \
 RUN git clone https://github.com/fpagliughi/sockpp.git \
     && cd sockpp \
     && cmake -Bbuild . \
-    && cmake --build build/ --target install
+    && cmake --build build/ --target install \
+    && cp build/libsockpp.so.0 /usr/lib/
 
 RUN pip3 install pre-commit
 
