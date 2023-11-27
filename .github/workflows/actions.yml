@@ -1,0 +1,9 @@
+name: GitHub Actions
+run-name: Build Test
+on: [push]
+jobs:
+  Build-Test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: source build
