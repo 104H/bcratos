@@ -38,9 +38,9 @@ int main(int argc, char **argv)
     {
       std::cout << "Listening on socket" << std::endl;
       ssize_t n = sock.recv(&msg, sizeof(msg));
-      std::cout << msg << std::endl;
-
-      extent = msg & 127;
+      
+      // the last 7 most significant bits out of total 16 are the extent of the reach
+      extent = msg >> 9;
 
       arm.reachAndGrab((float) extent / 100);
     }
