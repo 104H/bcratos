@@ -22,22 +22,16 @@ int main(int argc, char **argv)
     sockpp::initialize();
     sockpp::udp_socket sock;
 
-    if (!sock)
+    if (auto err = sock.bind(sockpp::inet_address("localhost", 1400)))
     {
-      std::cerr << "Error creating the UDP socket: " << sock.last_error_str() << std::endl;
-      return -1;
-    }
-
-    if (!sock.bind(sockpp::inet_address("localhost", 1400)))
-    {
-      std::cerr << "Error binding the UDP socket: " << sock.last_error_str() << std::endl;
+      std::cerr << "Error binding the UDP socket: " << err.error_message() << std::endl;
       return -1;
     }
 
     while (1)
     {
       std::cout << "Listening on socket" << std::endl;
-      ssize_t n = sock.recv(&msg, sizeof(msg));
+      auto n = sock.recv(&msg, sizeof(msg));
       
       // the last 7 most significant bits out of total 16 are the extent of the reach
       extent = msg >> 9;
