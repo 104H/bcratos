@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.9.1)
 
+set (CMAKE_CXX_STANDARD 20)
+
 project(bcratos_grabobject)
 
 find_package(Franka REQUIRED)

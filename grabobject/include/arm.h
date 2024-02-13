@@ -1,9 +1,7 @@
 #pragma once
 
 #include <iostream>
-
-#include <franka/exception.h>
-#include <franka/robot.h>
+#include <regex>
 
 #include <libserial/SerialPort.h>
 #include <libserial/SerialStream.h>
@@ -13,29 +11,28 @@ class RobotArm
 private:
   // mia hand port
   LibSerial::SerialPort hand;
+  std::string full_readout;
+  bool grasped; // is the hand in a grasped state
+  void readoutPosition(bool &read_success, uint8_t &thumb, uint8_t &mrl, uint8_t &index);
 
-  // franka emika arm
-  franka::Robot arm;
-
-  const std::array<std::array<double, 7>, 3> movement_angles = {{
-      {0, M_PI_4, 0, -0.5 * M_PI, 0, M_PI, M_PI_2},        // reach
-      {0, 0.8 * M_PI_4, 0, -0.5 * M_PI, 0, M_PI, M_PI_2},  // lift
-      {0, -M_PI_2, 0, -0.9 * M_PI, 0, 0.75 * M_PI, M_PI_2} // initial position
-  }};
-
-  // fastest possible
-  // const std::array<double, 3> movement_duration = {2.0, 1.0, 2.0};
-  const std::array<double, 3> movement_duration = {5.0, 1.0, 5.0};
+  /**
+   * Takes the thumb, middle ring and little, and index finger position to determine if they are in a grasped state
+  */
+  void isGraspComplete(const uint8_t &thumb, const uint8_t &mrl, const uint8_t &index);
 
 public:
-  RobotArm(const std::string hand_serial_port, const std::string arm_host_name);
-  void setDefaultBehavior();
+  RobotArm(const std::string hand_serial_port);
+
+  /**
+   * Getter function for variable grasped
+  */
+  bool getGrasped();
   void moveToStart();
-  void gripObject();
+  void gripObject(const uint8_t extent);
   void releaseObject();
-  double position(double start_angle, double end_angle, double time,
-                  double time_now);
-  void reachAndGrab(float const extent);
-  const std::array<double, 7> scaleAngles(std::array<double, 7> start_angles, std::array<double, 7> end_angles, const float extent);
-  const double computeExtent (const std::array<double, 7> angles);
+
+  /**
+   * Readout position of the hand, determine its state and update the variable grasped accordingly
+  */
+  void updateState();
 };

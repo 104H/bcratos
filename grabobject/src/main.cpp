@@ -1,42 +1,38 @@
 #include <arm.h>
 #include <stdio.h>
 
+#include <pthread.h>
+
 #include <sockpp/udp_socket.h>
 
 int main(int argc, char **argv)
 {
-  uint16_t msg, extent;
+  uint8_t msg;
+  pthread_t ptid;
 
   try
   {
-    RobotArm arm = RobotArm("/dev/ttyUSB0", "172.16.0.2");
-
-    std::array<double, 7> initial_position;
-
-    std::cout << "WARNING: This example will move the robot! "
-              << "Please make sure to have the user stop button at hand!"
-              << std::endl
-              << "Press Enter to continue..." << std::endl;
-    std::cin.ignore();
+    RobotArm arm = RobotArm("/dev/ttyUSB0");
 
     sockpp::initialize();
-    sockpp::udp_socket sock;
+    sockpp::udp_socket sock_position_command, sock_grasp_state;
+    sockpp::inet_address addr("localhost", 1000); // listener address for behaviour computer
 
-    if (auto err = sock.bind(sockpp::inet_address("localhost", 1400)))
+    // speaker socket to hand position
+    if (auto err = sock_position_command.bind(sockpp::inet_address("localhost", 1400)))
     {
-      std::cerr << "Error binding the UDP socket: " << err.error_message() << std::endl;
-      return -1;
+      std::cerr << "UDP socket bind: " << err.error_message() << std::endl;
     }
 
     while (1)
     {
-      std::cout << "Listening on socket" << std::endl;
-      auto n = sock.recv(&msg, sizeof(msg));
-      
-      // the last 7 most significant bits out of total 16 are the extent of the reach
-      extent = msg >> 9;
+      auto n = sock_position_command.recv(&msg, sizeof(msg), MSG_DONTWAIT);
 
-      arm.reachAndGrab((float) extent / 100);
+      arm.gripObject(msg);
+
+      arm.updateState();
+      
+      sock_grasp_state.send_to(arm.getGrasped() ? "1" : "0", addr);
     }
   }
   catch (const std::exception &e)
