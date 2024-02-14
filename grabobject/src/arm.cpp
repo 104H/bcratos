@@ -6,6 +6,7 @@ RobotArm::RobotArm(const std::string hand_serial_port)
   // Set the baud rate.
   hand.SetBaudRate(LibSerial::BaudRate::BAUD_115200);
 
+  // move to a start position of a fully open grip
   moveToStart();
 
   // turn on streaming for finger positions
@@ -34,12 +35,15 @@ void RobotArm::gripObject(const uint8_t extent)
 
 void RobotArm::readoutPosition(bool &read_success, uint8_t &thumb, uint8_t &mrl, uint8_t &index)
 {
+  // regular expression for detecting 5 consecutive digits occurring thrice for the thumb, mrl and index positions respectively
   std::regex rgx("enc : [\\+\\-](\\d{5}) ; [\\+\\-](\\d{5}) ; [\\+\\-](\\d{5}) ; [\\+\\-]\\d{5}\\n", std::regex_constants::ECMAScript);
   std::smatch sm;
 
+  // readout from the hand
   std::string new_readout;
   hand.Read(new_readout, 40, 60);
 
+  // append to has been read out
   full_readout.append(new_readout);
 
   // search readout with regex
@@ -72,6 +76,7 @@ void RobotArm::moveToStart()
 
 void RobotArm::isGraspComplete(const uint8_t &thumb, const uint8_t &mrl, const uint8_t &index)
 {
+  // grasp is complete if the motor positions are above 150
   grasped = (thumb > 150) & (mrl > 150) & (index > 150);
 }
 
@@ -81,6 +86,7 @@ void RobotArm::updateState()
   uint8_t thumb, mrl, index;
   readoutPosition(read_success, thumb, mrl, index);
 
+  // if the readout was successful, update the state of `grasped` according to the new readout
   if (read_success)
   {
     isGraspComplete(thumb, mrl, index);
