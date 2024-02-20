@@ -1,0 +1,5 @@
+handPort: "/dev/ttyUSB0"
+behaviourListenerIP: 192.168.137.20
+behaviourListenerPort: 1000
+decoderListenerIP: 192.168.137.40
+decoderListenerPort: 4700
