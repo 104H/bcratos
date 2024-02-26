@@ -45,16 +45,13 @@ int main(int argc, char **argv)
     while (1)
     {
       auto n = sock_position_command.recv(&msg, sizeof(msg));
-
+      
       arm.gripObject(msg);
-
-      // the last 7 most significant bits out of total 16 are the extent of the reach
-      msg = msg >> 9;
 
       arm.updateState();
 
       sock_grasp_state.send_to(arm.getGrasped() ? "1" : "0", addr);
-    }
+          }
   }
   catch (const std::exception &e)
   {

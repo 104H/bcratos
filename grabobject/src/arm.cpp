@@ -39,10 +39,13 @@ void RobotArm::readoutPosition(bool &read_success, uint8_t &thumb, uint8_t &mrl,
   std::regex rgx("enc : [\\+\\-](\\d{5}) ; [\\+\\-](\\d{5}) ; [\\+\\-](\\d{5}) ; [\\+\\-]\\d{5}\\n", std::regex_constants::ECMAScript);
   std::smatch sm;
 
+  // flush the input buffer to get the latest readout
+  hand.FlushInputBuffer();
+
   // readout from the hand
   std::string new_readout;
   hand.Read(new_readout, 40, 60);
-
+  
   // append to has been read out
   full_readout.append(new_readout);
 
@@ -56,6 +59,8 @@ void RobotArm::readoutPosition(bool &read_success, uint8_t &thumb, uint8_t &mrl,
     thumb = stoi(sm.str(1));
     mrl = stoi(sm.str(2));
     index = stoi(sm.str(3));
+
+    // std::cout << static_cast<int16_t>(thumb) << std::endl << static_cast<int16_t>(mrl) << std::endl << static_cast<int16_t>(index) << std::endl << std::endl;
 
     // clear out the string
     full_readout = "";
@@ -77,7 +82,8 @@ void RobotArm::moveToStart()
 void RobotArm::isGraspComplete(const uint8_t &thumb, const uint8_t &mrl, const uint8_t &index)
 {
   // grasp is complete if the motor positions are above 150
-  grasped = (thumb > 150) & (mrl > 150) & (index > 150);
+  uint16_t threshold = 100;
+  grasped = (thumb > threshold) & (mrl > threshold) & (index > threshold);
 }
 
 void RobotArm::updateState()
