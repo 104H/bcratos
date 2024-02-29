@@ -6,6 +6,8 @@
 #include <libserial/SerialPort.h>
 #include <libserial/SerialStream.h>
 
+#include <boost/log/trivial.hpp>
+
 class RobotArm
 {
 private:

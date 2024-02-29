@@ -4,6 +4,10 @@ set (CMAKE_CXX_STANDARD 20)
 
 project(bcratos_grabobject)
 
+set(CMAKE_CXX_FLAGS "-DBOOST_LOG_DYN_LINK -lboost_log_setup")
+
+include(FetchContent)
+
 find_package(Franka REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(sockpp REQUIRED)
@@ -15,7 +19,8 @@ include_directories(include)
 find_package(PkgConfig)
 pkg_check_modules(SERIAL libserial)
 
-include(FetchContent)
+find_package(Boost REQUIRED COMPONENTS log_setup log)
+include_directories(${Boost_INCLUDE_DIRS})
 
 FetchContent_Declare(
   yaml-cpp
@@ -36,3 +41,4 @@ target_link_libraries(move_arm PRIVATE franka)
 target_link_libraries(move_arm PRIVATE ${SERIAL_LDFLAGS})
 target_link_libraries(move_arm PRIVATE sockpp)
 target_link_libraries(move_arm PRIVATE yaml-cpp::yaml-cpp)
+target_link_libraries(move_arm PRIVATE ${Boost_LIBRARIES})

@@ -27,10 +27,11 @@ void RobotArm::gripObject(const uint8_t extent)
   const int8_t scaled_extent = extent * 0.75;
 
   // convert to string
-  std::string ext = std::to_string(scaled_extent);
+  std::string cmd = "@AGSM0" + std::to_string(scaled_extent) + "45++++++*\r";
+  BOOST_LOG_TRIVIAL(debug) << "Command to Hand: " << cmd;
 
   // write to the hand serial port
-  hand.Write("@AGSM0" + ext + "45++++++*\r");
+  hand.Write(cmd);
 }
 
 void RobotArm::readoutPosition(bool &read_success, uint8_t &thumb, uint8_t &mrl, uint8_t &index)
@@ -45,7 +46,7 @@ void RobotArm::readoutPosition(bool &read_success, uint8_t &thumb, uint8_t &mrl,
   // readout from the hand
   std::string new_readout;
   hand.Read(new_readout, 40, 60);
-  
+
   // append to has been read out
   full_readout.append(new_readout);
 
@@ -60,7 +61,7 @@ void RobotArm::readoutPosition(bool &read_success, uint8_t &thumb, uint8_t &mrl,
     mrl = stoi(sm.str(2));
     index = stoi(sm.str(3));
 
-    // std::cout << static_cast<int16_t>(thumb) << std::endl << static_cast<int16_t>(mrl) << std::endl << static_cast<int16_t>(index) << std::endl << std::endl;
+    BOOST_LOG_TRIVIAL(debug) << "Thumb, MRL, Finger Positions: " << static_cast<int16_t>(thumb) << " " << static_cast<int16_t>(mrl) << " " << static_cast<int16_t>(index);
 
     // clear out the string
     full_readout = "";
@@ -84,6 +85,7 @@ void RobotArm::isGraspComplete(const uint8_t &thumb, const uint8_t &mrl, const u
   // grasp is complete if the motor positions are above 150
   uint16_t threshold = 100;
   grasped = (thumb > threshold) & (mrl > threshold) & (index > threshold);
+  BOOST_LOG_TRIVIAL(debug) << "Hand closed: " << grasped;
 }
 
 void RobotArm::updateState()
