@@ -5,6 +5,7 @@ RobotArm::RobotArm(const std::string hand_serial_port)
   hand.Open(hand_serial_port);
   // Set the baud rate.
   hand.SetBaudRate(LibSerial::BaudRate::BAUD_115200);
+  hand.FlushIOBuffers();
 
   // move to a start position of a fully open grip
   moveToStart();
@@ -45,7 +46,7 @@ void RobotArm::readoutPosition(bool &read_success, uint8_t &thumb, uint8_t &mrl,
 
   // readout from the hand
   std::string new_readout;
-  hand.Read(new_readout, 40, 60);
+  hand.Read(new_readout, 40, 0);
 
   // append to has been read out
   full_readout.append(new_readout);

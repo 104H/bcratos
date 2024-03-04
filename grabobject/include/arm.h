@@ -47,19 +47,19 @@ public:
 
   /**
    * Move the hand to the starting position of extended fingers and thumb, an open grip.
-  */
+   */
   void moveToStart();
 
   /**
-   * Close the grip of the hand on a scale of 0 to 100, where 0 is a fully open grip and 100 is a grip closed enough to grip the object in experiment 
-   * 
+   * Close the grip of the hand on a scale of 0 to 100, where 0 is a fully open grip and 100 is a grip closed enough to grip the object in experiment
+   *
    * uint8_t extent : The extent of the grip from 0 to 100
-  */
+   */
   void gripObject(const uint8_t extent);
 
   /**
    * Open the hand to a fully open grip.
-  */
+   */
   void releaseObject();
 
   /**
