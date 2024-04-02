@@ -12,19 +12,44 @@
 #include <boost/log/sources/severity_logger.hpp>
 #include <boost/log/sources/record_ostream.hpp>
 
-void *handStateThread(void* arm)
+struct args_struct
 {
+  RobotArm* arm;
+  sockpp::inet_address* behaviour_addr;
+  sockpp::inet_address* stimulator_addr;
+  args_struct();
+};
+
+void* handStateThread(void *args)
+{
+  args_struct* a = (args_struct *)args;
+  sockpp::udp_socket sock_behaviour, sock_stimulator;
+
   while (1)
   {
-    ((RobotArm*)arm)->updateState();
+    a->arm->updateState();
+
+    std::string state = a->arm->getGrasped() ? "1" : "0";
+
+    if (auto err = sock_behaviour.send_to(state, *(a->behaviour_addr)))
+    {
+      BOOST_LOG_TRIVIAL(debug) << "Sending hand state to behaviour computer: " << err.error_message();
+    }
+
+    if (auto err = sock_stimulator.send_to(state, *(a->stimulator_addr)))
+    {
+      BOOST_LOG_TRIVIAL(debug) << "Sending hand state to stimulator computer: " << err.error_message();
+    }
   }
+
+  return NULL;
 }
 
 int main(int argc, char **argv)
 {
   boost::log::add_common_attributes();
   boost::log::add_file_log(
-      boost::log::keywords::file_name = "log_%N.log", boost::log::keywords::rotation_size = 10 * 1024 * 1024, boost::log::keywords::format = "[%TimeStamp%]: %Message%", boost::log::keywords::auto_flush = true);
+      boost::log::keywords::file_name = "logs/log_%N.log", boost::log::keywords::rotation_size = 10 * 1024 * 1024, boost::log::keywords::format = "[%TimeStamp%]: %Message%", boost::log::keywords::auto_flush = true);
   boost::log::core::get()->set_filter(
       boost::log::trivial::severity >= boost::log::trivial::trace);
   BOOST_LOG_TRIVIAL(info) << "Start";
@@ -83,9 +108,14 @@ int main(int argc, char **argv)
       BOOST_LOG_TRIVIAL(info) << "UDP socket bind: " << err.error_message();
     }
 
+    struct args_struct *args = (args_struct*) malloc(sizeof(struct args_struct));
+    args->arm = &arm;
+    args->behaviour_addr = &behaviour_addr;
+    args->stimulator_addr = &stimulator_addr;
+
     // spawn new thread for reading the state of the hand
     pthread_create(
-        &stateReader, NULL, handStateThread, &arm);
+        &stateReader, NULL, &handStateThread, args);
 
     while (1)
     {
@@ -93,10 +123,6 @@ int main(int argc, char **argv)
       BOOST_LOG_TRIVIAL(debug) << "Recieved message: " << msg;
 
       arm.gripObject(msg);
-
-      std::string state = arm.getGrasped() ? "1" : "0";
-      sock_behaviour.send_to(state, behaviour_addr);
-      sock_stimulator.send_to(state, stimulator_addr);
     }
 
     pthread_join(stateReader, NULL);
