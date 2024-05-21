@@ -36,12 +36,15 @@
     }
   },
 
+  "mounts": [
+    "source=/dev/,target=/dev/,type=bind,consistency=cached"
+  ],
+
   // the arguments below are defined to run this container with the ability of real time premption
   // they are defined here: https://github.com/2b-t/docker-realtime#13-launching-the-docker
   "runArgs": [
     "--cap-add=sys_nice",
     "--network=host",
-    "--device=/dev/ttyUSB0"
   ],
 
   "remoteUser": "root"
