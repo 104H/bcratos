@@ -56,8 +56,8 @@ void RobotArm::moveToStart()
 {
   std::array<double, 7> initial_position;
   double time = 0.0;
-  auto angles = movement_angles[2];
-  auto duration = movement_duration[2];
+  auto angles = movement_angles[1];
+  auto duration = movement_duration[1];
 
   arm.control([this, &time, &initial_position, &angles,
                &duration](const franka::RobotState &robot_state,
@@ -98,7 +98,6 @@ const std::array<double, 7> RobotArm::scaleAngles(std::array<double, 7> start_an
   scaled_angles[6] = end_angles[6];
 
   scaled_angles[1] = (extent * (end_angles[1] - start_angles[1])) + start_angles[1];
-  scaled_angles[3] = (extent * (end_angles[3] - start_angles[3])) + start_angles[3];
   scaled_angles[5] = (extent * (end_angles[5] - start_angles[5])) + start_angles[5];
 
   return scaled_angles;
@@ -109,7 +108,7 @@ void RobotArm::reachAndGrab(float const extent)
   std::array<double, 7> initial_position;
   double time;
 
-  for (int i = 0; i < 3; i++)
+  for (int i = 0; i < 2; i++)
   {
     double time = 0.0, duration;
     std::array<double, 7> angles;
@@ -123,7 +122,7 @@ void RobotArm::reachAndGrab(float const extent)
       double current_extent = computeExtent(robot_state);
 
       // update extent according to last extent
-      angles = scaleAngles(movement_angles[2], movement_angles[i], extent);
+      angles = scaleAngles(movement_angles[1], movement_angles[i], extent);
       duration = std::abs(current_extent - extent) * movement_duration[i];
     }
     else
@@ -188,5 +187,5 @@ void RobotArm::reachAndGrab(float const extent)
 
 const double RobotArm::computeExtent(const std::array<double, 7> angles)
 {
-  return (angles[1] - movement_angles[2][1]) / (movement_angles[0][1] - movement_angles[2][1]);
+  return (angles[1] - movement_angles[1][1]) / (movement_angles[0][1] - movement_angles[1][1]);
 }
