@@ -96,20 +96,6 @@ void RobotArm::moveToStart()
     return output; });
 }
 
-const std::array<double, 7> RobotArm::scaleAngles(std::array<double, 7> start_angles, std::array<double, 7> end_angles, const float extent)
-{
-  std::array<double, 7> scaled_angles;
-  scaled_angles[0] = end_angles[0];
-  scaled_angles[2] = end_angles[2];
-  scaled_angles[4] = end_angles[4];
-  scaled_angles[6] = end_angles[6];
-
-  scaled_angles[1] = (extent * (end_angles[1] - start_angles[1])) + start_angles[1];
-  scaled_angles[5] = (extent * (end_angles[5] - start_angles[5])) + start_angles[5];
-
-  return scaled_angles;
-}
-
 void RobotArm::reachAndGrab(float const extent)
 {
   std::array<double, 7> initial_position;

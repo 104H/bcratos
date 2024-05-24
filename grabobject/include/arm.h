@@ -44,7 +44,6 @@ public:
   double position(double start_angle, double end_angle, double time,
                   double time_now);
   void reachAndGrab(float const extent);
-  const std::array<double, 7> scaleAngles(std::array<double, 7> start_angles, std::array<double, 7> end_angles, const float extent);
   const double computeExtent(const std::array<double, 7> angles);
   const float determinePositionFromCommand(const int command);
   void setPosition_d(const float target);
