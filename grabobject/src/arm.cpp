@@ -11,10 +11,11 @@ RobotArm::RobotArm(const std::string hand_serial_port,
   hand.SetBaudRate(LibSerial::BaudRate::BAUD_115200);
 
   // define the target position
-  franka::RobotState initial_state = arm.readOnce();
-  Eigen::Affine3d initial_transform(Eigen::Matrix4d::Map(initial_state.O_T_EE.data()));
-  Eigen::Vector3d position_d(initial_transform.translation());
-  Eigen::Quaterniond orientation_d(initial_transform.linear());
+  initial_state = arm.readOnce();
+  initial_transform = Eigen::Matrix4d::Map(initial_state.O_T_EE.data());
+  position_start(initial_transform.translation());
+  orientation_d = initial_transform.linear();
+  position_d = position_start;
 
   arm.setCollisionBehavior({{20.0, 20.0, 18.0, 18.0, 16.0, 14.0, 12.0}},
                            {{20.0, 20.0, 18.0, 18.0, 16.0, 14.0, 12.0}},
@@ -204,4 +205,20 @@ void RobotArm::reachAndGrab(float const extent)
 const double RobotArm::computeExtent(const std::array<double, 7> angles)
 {
   return (angles[1] - movement_angles[1][1]) / (movement_angles[0][1] - movement_angles[1][1]);
+}
+
+const float RobotArm::determinePositionFromCommand(const int command)
+{
+  return ((command / 100) * (position_final[1] - position_start[1])) + position_start[1];
+}
+
+void RobotArm::setPosition_d(const float target)
+{
+  position_d[1] = target;
+}
+
+void RobotArm::setTargetPosition(const int command)
+{
+  float pos = determinePositionFromCommand(command);
+  setPosition_d(pos);
 }

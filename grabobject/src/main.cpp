@@ -36,7 +36,7 @@ int main(int argc, char **argv)
       // the last 7 most significant bits out of total 16 are the extent of the reach
       extent = msg >> 9;
 
-      arm.reachAndGrab((float) extent / 100);
+      arm.setTargetPosition((float) extent / 100);
     }
   }
   catch (const std::exception &e)

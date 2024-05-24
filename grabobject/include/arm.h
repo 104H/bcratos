@@ -25,6 +25,8 @@ private:
   Eigen::Affine3d initial_transform;
   Eigen::Vector3d position_d;
   Eigen::Quaterniond orientation_d;
+  Eigen::Vector3d position_start;
+  Eigen::Vector3d position_final = {0.84, -0.02, 0.35};
 
   const std::array<std::array<double, 7>, 3> movement_angles = {{
       {0, M_PI_4, 0, -0.5 * M_PI, 0, M_PI, M_PI_2},       // reach
@@ -44,4 +46,7 @@ public:
   void reachAndGrab(float const extent);
   const std::array<double, 7> scaleAngles(std::array<double, 7> start_angles, std::array<double, 7> end_angles, const float extent);
   const double computeExtent(const std::array<double, 7> angles);
+  const float determinePositionFromCommand(const int command);
+  void setPosition_d(const float target);
+  void setTargetPosition(const int command);
 };
