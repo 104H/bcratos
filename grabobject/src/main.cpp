@@ -28,6 +28,8 @@ int main(int argc, char **argv)
       return -1;
     }
 
+    arm.reachAndGrasp();
+
     while (1)
     {
       std::cout << "Listening on socket" << std::endl;

@@ -10,25 +10,13 @@ RobotArm::RobotArm(const std::string hand_serial_port,
   // Set the baud rate.
   hand.SetBaudRate(LibSerial::BaudRate::BAUD_115200);
 
+  setDefaultBehavior();
+
+  moveToStart();
+
   // define the target position
   initial_state = arm.readOnce();
   initial_transform = Eigen::Matrix4d::Map(initial_state.O_T_EE.data());
-  position_start(initial_transform.translation());
-  orientation_d = initial_transform.linear();
-  position_d = position_start;
-
-  arm.setCollisionBehavior({{20.0, 20.0, 18.0, 18.0, 16.0, 14.0, 12.0}},
-                           {{20.0, 20.0, 18.0, 18.0, 16.0, 14.0, 12.0}},
-                           {{20.0, 20.0, 18.0, 18.0, 16.0, 14.0, 12.0}},
-                           {{20.0, 20.0, 18.0, 18.0, 16.0, 14.0, 12.0}},
-                           {{20.0, 20.0, 20.0, 25.0, 25.0, 25.0}},
-                           {{20.0, 20.0, 20.0, 25.0, 25.0, 25.0}},
-                           {{20.0, 20.0, 20.0, 25.0, 25.0, 25.0}},
-                           {{20.0, 20.0, 20.0, 25.0, 25.0, 25.0}});
-  arm.setJointImpedance({{3000, 3000, 3000, 2500, 2500, 2000, 2000}});
-  arm.setCartesianImpedance({{3000, 3000, 3000, 300, 300, 300}});
-
-  moveToStart();
 }
 
 void RobotArm::gripObject() { hand.Write("@AGSM07045++++++*\r"); }
@@ -47,16 +35,19 @@ double RobotArm::position(double start_angle, double end_angle, double time,
 
 void RobotArm::setDefaultBehavior()
 {
-  arm.setCollisionBehavior({{20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0}},
-                           {{20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0}},
-                           {{10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0}},
-                           {{10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0}},
-                           {{20.0, 20.0, 20.0, 20.0, 20.0, 20.0}},
-                           {{20.0, 20.0, 20.0, 20.0, 20.0, 20.0}},
-                           {{10.0, 10.0, 10.0, 10.0, 10.0, 10.0}},
-                           {{10.0, 10.0, 10.0, 10.0, 10.0, 10.0}});
+  arm.setCollisionBehavior(
+      {{20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0}}, {{20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0}},
+      {{10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0}}, {{10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0}},
+      {{20.0, 20.0, 20.0, 20.0, 20.0, 20.0}}, {{20.0, 20.0, 20.0, 20.0, 20.0, 20.0}},
+      {{10.0, 10.0, 10.0, 10.0, 10.0, 10.0}}, {{10.0, 10.0, 10.0, 10.0, 10.0, 10.0}});
   arm.setJointImpedance({{3000, 3000, 3000, 2500, 2500, 2000, 2000}});
   arm.setCartesianImpedance({{3000, 3000, 3000, 300, 300, 300}});
+
+  // set collision behavior
+  arm.setCollisionBehavior({{100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0}},
+                           {{100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0}},
+                           {{100.0, 100.0, 100.0, 100.0, 100.0, 100.0}},
+                           {{100.0, 100.0, 100.0, 100.0, 100.0, 100.0}});
 }
 
 void RobotArm::moveToStart()
@@ -89,17 +80,16 @@ void RobotArm::moveToStart()
          initial_position[6] + delta[6]}};
 
     if (time >= duration) {
-      std::cout << std::endl << "Finished phase " << std::endl;
+      std::cout << std::endl << "Attained Starting Position" << std::endl;
 
       return franka::MotionFinished(output);
     }
     return output; });
 }
 
-void RobotArm::reachAndGrab(float const extent)
+void RobotArm::reachAndGrasp()
 {
-  std::array<double, 7> initial_position;
-  double time;
+  std::cout << "Spawning control thread" << std::endl;
 
   // Compliance parameters
   const double translational_stiffness{150.0};
@@ -114,83 +104,63 @@ void RobotArm::reachAndGrab(float const extent)
   damping.bottomRightCorner(3, 3) << 2.0 * sqrt(rotational_stiffness) *
                                          Eigen::MatrixXd::Identity(3, 3);
 
-  for (int i = 0; i < 2; i++)
+  // load robot model
+  franka::Model model = arm.loadModel();
+
+  // equilibrium point is the initial position
+  position_d = initial_transform.translation();
+  orientation_d = initial_transform.linear();
+
+  // define callback for the torque control loop
+  std::function<franka::Torques(const franka::RobotState &, franka::Duration)>
+      impedance_control_callback = [&](const franka::RobotState &robot_state,
+                                       franka::Duration /*duration*/) -> franka::Torques
   {
-    double time = 0.0, duration;
+    // get state variables
+    std::array<double, 7> coriolis_array = model.coriolis(robot_state);
+    std::array<double, 42> jacobian_array =
+        model.zeroJacobian(franka::Frame::kEndEffector, robot_state);
 
-    // load robot model
-    franka::Model model = arm.loadModel();
+    // convert to Eigen
+    Eigen::Map<const Eigen::Matrix<double, 7, 1>> coriolis(coriolis_array.data());
+    Eigen::Map<const Eigen::Matrix<double, 6, 7>> jacobian(jacobian_array.data());
+    Eigen::Map<const Eigen::Matrix<double, 7, 1>> q(robot_state.q.data());
+    Eigen::Map<const Eigen::Matrix<double, 7, 1>> dq(robot_state.dq.data());
+    Eigen::Affine3d transform(Eigen::Matrix4d::Map(robot_state.O_T_EE.data()));
+    Eigen::Vector3d position(transform.translation());
+    Eigen::Quaterniond orientation(transform.linear());
 
-    // define callback for the torque control loop
-    std::function<franka::Torques(const franka::RobotState &, franka::Duration)>
-        impedance_control_callback = [&](const franka::RobotState &robot_state,
-                                         franka::Duration /*duration*/) -> franka::Torques
+    // compute error to desired equilibrium pose
+    // position error
+    Eigen::Matrix<double, 6, 1> error;
+    error.head(3) << position - position_d;
+
+    // orientation error
+    // "difference" quaternion
+    if (orientation_d.coeffs().dot(orientation.coeffs()) < 0.0)
     {
-      // get state variables
-      std::array<double, 7> coriolis_array = model.coriolis(robot_state);
-      std::array<double, 42> jacobian_array =
-          model.zeroJacobian(franka::Frame::kEndEffector, robot_state);
-      // convert to Eigen
-      Eigen::Map<const Eigen::Matrix<double, 7, 1>> coriolis(coriolis_array.data());
-      Eigen::Map<const Eigen::Matrix<double, 6, 7>> jacobian(jacobian_array.data());
-      Eigen::Map<const Eigen::Matrix<double, 7, 1>> q(robot_state.q.data());
-      Eigen::Map<const Eigen::Matrix<double, 7, 1>> dq(robot_state.dq.data());
-      Eigen::Affine3d transform(Eigen::Matrix4d::Map(robot_state.O_T_EE.data()));
-      Eigen::Vector3d position(transform.translation());
-      Eigen::Quaterniond orientation(transform.linear());
-      // compute error to desired equilibrium pose
-      // position error
-      Eigen::Matrix<double, 6, 1> error;
-      error.head(3) << position - position_d;
-      // orientation error
-      // "difference" quaternion
-      if (orientation_d.coeffs().dot(orientation.coeffs()) < 0.0)
-      {
-        orientation.coeffs() << -orientation.coeffs();
-      }
-      // "difference" quaternion
-      Eigen::Quaterniond error_quaternion(orientation.inverse() * orientation_d);
-      error.tail(3) << error_quaternion.x(), error_quaternion.y(), error_quaternion.z();
-      // Transform to base frame
-      error.tail(3) << -transform.linear() * error.tail(3);
-      // compute control
-      Eigen::VectorXd tau_task(7), tau_d(7);
-      // Spring damper system with damping ratio=1
-      tau_task << jacobian.transpose() * (-stiffness * error - damping * (jacobian * dq));
-      tau_d << tau_task + coriolis;
-      std::array<double, 7> tau_d_array{};
-      Eigen::VectorXd::Map(&tau_d_array[0], 7) = tau_d;
-      return tau_d_array;
-    };
-
-    arm.control(impedance_control_callback);
-
-    // if the command was not to reach the final position
-    if (extent < 1.0)
-    {
-      return;
+      orientation.coeffs() << -orientation.coeffs();
     }
+    // "difference" quaternion
+    Eigen::Quaterniond error_quaternion(orientation.inverse() * orientation_d);
+    error.tail(3) << error_quaternion.x(), error_quaternion.y(), error_quaternion.z();
 
-    if (i == 0)
-    {
-      // arm has reached the object, grab object
-      std::cout << std::endl
-                << "Grabbing Object" << std::endl;
-      gripObject();
-    }
-    else if (i == 1)
-    {
-      // arm has lifted the object, release object
-      std::cout << std::endl
-                << "Releasing Object" << std::endl;
-      releaseObject();
-    }
-  }
-}
+    // Transform to base frame
+    error.tail(3) << -transform.linear() * error.tail(3);
 
-const double RobotArm::computeExtent(const std::array<double, 7> angles)
-{
-  return (angles[1] - movement_angles[1][1]) / (movement_angles[0][1] - movement_angles[1][1]);
+    // compute control
+    Eigen::VectorXd tau_task(7), tau_d(7);
+
+    // Spring damper system with damping ratio=1
+    tau_task << jacobian.transpose() * (-stiffness * error - damping * (jacobian * dq));
+    tau_d << tau_task + coriolis;
+    std::array<double, 7> tau_d_array{};
+    Eigen::VectorXd::Map(&tau_d_array[0], 7) = tau_d;
+
+    return tau_d_array;
+  };
+
+  arm.control(impedance_control_callback);
 }
 
 const float RobotArm::determinePositionFromCommand(const int command)
