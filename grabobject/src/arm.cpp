@@ -80,7 +80,7 @@ void RobotArm::moveToStart()
          initial_position[6] + delta[6]}};
 
     if (time >= duration) {
-      std::cout << std::endl << "Attained Starting Position" << std::endl;
+      std::cout << "Attained Starting Position" << std::endl;
 
       return franka::MotionFinished(output);
     }
@@ -109,6 +109,7 @@ void RobotArm::reachAndGrasp()
 
   // equilibrium point is the initial position
   position_d = initial_transform.translation();
+  position_start = initial_transform.translation();
   orientation_d = initial_transform.linear();
 
   // define callback for the torque control loop
@@ -163,17 +164,26 @@ void RobotArm::reachAndGrasp()
   arm.control(impedance_control_callback);
 }
 
-const float RobotArm::determinePositionFromCommand(const int command)
+const float RobotArm::determinePositionFromCommand(const float command)
 {
-  return ((command / 100) * (position_final[1] - position_start[1])) + position_start[1];
+  if (command == 100)
+  {
+    gripObject();
+  }
+  else if (command == 0)
+  {
+    releaseObject();
+  }
+
+  return (command * (position_final[2] - position_start[2])) + position_start[2];
 }
 
 void RobotArm::setPosition_d(const float target)
 {
-  position_d[1] = target;
+  position_d[2] = target;
 }
 
-void RobotArm::setTargetPosition(const int command)
+void RobotArm::setTargetPosition(const float command)
 {
   float pos = determinePositionFromCommand(command);
   setPosition_d(pos);

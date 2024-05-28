@@ -2,10 +2,38 @@
 #include <stdio.h>
 
 #include <sockpp/udp_socket.h>
+#include <pthread.h>
+
+struct args_struct
+{
+  RobotArm *arm;
+  sockpp::udp_socket *behaviour_addr;
+  args_struct();
+};
+
+void *handStateThread(void *args)
+{
+  std::cout << "Spawning command reciever thread" << std::endl;
+
+  args_struct *a = (args_struct *)args;
+  uint16_t msg, extent;
+
+  while (1)
+  {
+    auto n = a->behaviour_addr->recv(&msg, sizeof(msg));
+
+    // the last 7 most significant bits out of total 16 are the extent of the reach
+    // extent = msg >> 9;
+
+    a->arm->setTargetPosition((float)msg / 100);
+  }
+
+  return NULL;
+}
 
 int main(int argc, char **argv)
 {
-  uint16_t msg, extent;
+  pthread_t handpositionCommand;
 
   try
   {
@@ -24,22 +52,19 @@ int main(int argc, char **argv)
 
     if (auto err = sock.bind(sockpp::inet_address("localhost", 1400)))
     {
-      std::cerr << "Error binding the UDP socket: " << err.error_message() << std::endl;
-      return -1;
+      std::cerr << "UDP socket bind: " << err << std::endl;
     }
 
+    struct args_struct *args = (args_struct*) malloc(sizeof(struct args_struct));
+    args->arm = &arm;
+    args->behaviour_addr = &sock;
+
+    // spawn new thread for reading the state of the hand
+    pthread_create(
+        &handpositionCommand, NULL, &handStateThread, args);
+
+    // start cartesian control loop
     arm.reachAndGrasp();
-
-    while (1)
-    {
-      std::cout << "Listening on socket" << std::endl;
-      auto n = sock.recv(&msg, sizeof(msg));
-      
-      // the last 7 most significant bits out of total 16 are the extent of the reach
-      extent = msg >> 9;
-
-      arm.setTargetPosition((float) extent / 100);
-    }
   }
   catch (const std::exception &e)
   {
