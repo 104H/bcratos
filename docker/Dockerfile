@@ -13,7 +13,8 @@ RUN apt-get update && DEBIAN_FRONTEND="noninteractive" \
     libpoco-dev \
     libeigen3-dev \
     libserial-dev \
-    python3-pip
+    python3-pip \
+    libboost-log-dev
 
 RUN git clone --recursive https://github.com/frankaemika/libfranka \
     && cd libfranka \
@@ -28,7 +29,6 @@ RUN git clone --recursive https://github.com/frankaemika/libfranka \
 
 RUN git clone https://github.com/fpagliughi/sockpp.git \
     && cd sockpp \
-    && git checkout v1.x \
     && cmake -Bbuild . \
     && cmake --build build/ --target install \
     && cp build/libsockpp.so* /usr/lib/

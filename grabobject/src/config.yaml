@@ -1,0 +1,8 @@
+handPort: "/dev/ttyUSB0"
+armIP: 172.16.0.2
+stimulatorListenerIP: 192.168.137.30
+stimulatorListenerPort: 1000
+behaviourListenerIP: 192.168.137.20
+behaviourListenerPort: 1000
+decoderListenerIP: 192.168.137.40
+decoderListenerPort: 4700
