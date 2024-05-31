@@ -255,7 +255,22 @@ void RobotArm::setPosition_d(const float target)
 void RobotArm::setTargetPosition(const float command)
 {
   BOOST_LOG_TRIVIAL(debug) << "Received command: " << command;
+
   float pos = determinePositionFromCommand(command);
+
+  // if the command position is a change of 10% or more, then move only by 10%
+  float threshold_high = 1.1 * getPosition_d();
+  float threshold_low = 0.9 * getPosition_d();
+
+  if (pos > threshold_high)
+  {
+    pos = threshold_high;
+  }
+  else if (pos < threshold_low)
+  {
+    pos = threshold_low;
+  }
+
   setPosition_d(pos);
 }
 
