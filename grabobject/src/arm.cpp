@@ -235,16 +235,21 @@ const float RobotArm::determinePositionFromCommand(const float command)
     releaseObject();
   }
 
-  return (command * (position_final[2] - position_start[2])) + position_start[2];
+  float pos = (command * (position_final[2] - position_start[2])) + position_start[2];
+  BOOST_LOG_TRIVIAL(debug) << "New Position: " << pos;
+
+  return pos;
 }
 
 void RobotArm::setPosition_d(const float target)
 {
+  BOOST_LOG_TRIVIAL(debug) << "Setting target to: " << target;
   position_d[2] = target;
 }
 
 void RobotArm::setTargetPosition(const float command)
 {
+  BOOST_LOG_TRIVIAL(debug) << "Received command: " << command;
   float pos = determinePositionFromCommand(command);
   setPosition_d(pos);
 }

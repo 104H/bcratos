@@ -29,23 +29,28 @@ void *handStateThread(void *args)
 
   args_struct *a = (args_struct *)args;
   sockpp::udp_socket sock_behaviour, sock_stimulator;
-  uint16_t msg, extent;
+  uint16_t msg, handCommand, armCommand;
 
   while (1)
   {
     // recieve command message from behaviour pc
     auto n = a->sock_position_command->recv(&msg, sizeof(msg));
 
-    // the last 7 most significant bits out of total 16 are the extent of the reach
-    // extent = msg >> 9;
+    // the 8 least significant bits out of total 16 are the extent of the arm's reach
+    armCommand = (uint8_t) msg;
+
+    // the 8 most significant bits out of total 16 are the extent of the hand's closure
+    handCommand = msg >> 8;
 
     BOOST_LOG_TRIVIAL(debug) << "Received message: " << msg;
+    BOOST_LOG_TRIVIAL(debug) << "Command to hand: " << handCommand;
+    BOOST_LOG_TRIVIAL(debug) << "Command to arm: " << armCommand;
 
     // close the hand according to the command
-    a->arm->gripObject(msg);
+    a->arm->gripObject(handCommand);
 
     // position the arm according to the command
-    a->arm->setTargetPosition((float)msg / 100);
+    a->arm->setTargetPosition((float)armCommand / 100);
 
     // update the state variable for the hand
     a->arm->updateState();
