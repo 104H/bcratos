@@ -226,15 +226,6 @@ void RobotArm::reachAndGrasp()
 
 const float RobotArm::determinePositionFromCommand(const float command)
 {
-  if (command == 100)
-  {
-    gripObject(100);
-  }
-  else if (command == 0)
-  {
-    releaseObject();
-  }
-
   float pos = (command * (position_final[2] - position_start[2])) + position_start[2];
   BOOST_LOG_TRIVIAL(debug) << "New Position: " << pos;
 
