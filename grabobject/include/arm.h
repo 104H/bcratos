@@ -55,6 +55,9 @@ private:
    */
   void isGraspComplete(const uint8_t &thumb, const uint8_t &mrl, const uint8_t &index);
 
+  void setPosition_d(const float target);
+  const float getPosition_d();
+
 public:
   /**
    * Constructor for serial port of the hand
@@ -90,7 +93,6 @@ public:
   void setDefaultBehavior();
   void reachAndGrasp();
   const float determinePositionFromCommand(const float command);
-  void setPosition_d(const float target);
   void setTargetPosition(const float command);
 
   /**

@@ -241,6 +241,11 @@ const float RobotArm::determinePositionFromCommand(const float command)
   return pos;
 }
 
+const float RobotArm::getPosition_d()
+{
+  return position_d[2];
+}
+
 void RobotArm::setPosition_d(const float target)
 {
   BOOST_LOG_TRIVIAL(debug) << "Setting target to: " << target;
