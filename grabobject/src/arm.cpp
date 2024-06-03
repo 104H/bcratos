@@ -249,17 +249,19 @@ void RobotArm::setTargetPosition(const float command)
 
   float pos = determinePositionFromCommand(command);
 
-  // if the command position is a change of 10% or more, then move only by 10%
-  float threshold_high = 1.1 * getPosition_d();
-  float threshold_low = 0.9 * getPosition_d();
+  // if the command position is a change of 5% or more, then move only by 5%
+  float threshold_high = 1.05 * getPosition_d();
+  float threshold_low = 0.95 * getPosition_d();
 
   if (pos > threshold_high)
   {
     pos = threshold_high;
+    BOOST_LOG_TRIVIAL(debug) << "Applying high pass filer. Commanded position is: " << pos;
   }
   else if (pos < threshold_low)
   {
     pos = threshold_low;
+    BOOST_LOG_TRIVIAL(debug) << "Applying low pass filer. Commanded position is: " << pos;
   }
 
   setPosition_d(pos);
