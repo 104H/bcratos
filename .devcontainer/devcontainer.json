@@ -44,7 +44,8 @@
   // they are defined here: https://github.com/2b-t/docker-realtime#13-launching-the-docker
   "runArgs": [
     "--cap-add=sys_nice",
-    "--network=host"
+    "--network=host",
+    "--device=/dev/ttyUSB0"
   ],
 
   "remoteUser": "root"

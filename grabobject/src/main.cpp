@@ -36,11 +36,11 @@ void *handStateThread(void *args)
     // recieve command message from behaviour pc
     auto n = a->sock_position_command->recv(&msg, sizeof(msg));
 
-    // the 8 least significant bits out of total 16 are the extent of the arm's reach
-    armCommand = (uint8_t) msg;
+    // the 8 most significant bits out of total 16 are the extent of the arm's reach
+    armCommand = msg >> 8;
 
-    // the 8 most significant bits out of total 16 are the extent of the hand's closure
-    handCommand = msg >> 8;
+    // the 8 least significant bits out of total 16 are the extent of the hand's closure
+    handCommand = (uint8_t)msg;
 
     BOOST_LOG_TRIVIAL(debug) << "Received message: " << msg;
     BOOST_LOG_TRIVIAL(debug) << "Command to hand: " << handCommand;
@@ -50,7 +50,7 @@ void *handStateThread(void *args)
     a->arm->gripObject(handCommand);
 
     // position the arm according to the command
-    a->arm->setTargetPosition((float)armCommand / 100);
+    a->arm->setTargetPosition((float)armCommand / 180);
 
     // update the state variable for the hand
     a->arm->updateState();
@@ -128,10 +128,8 @@ int main(int argc, char **argv)
     sockpp::inet_address stimulator_addr(config["stimulatorListenerIP"].as<std::string>(), config["stimulatorListenerPort"].as<int16_t>());
 
     // speaker socket to hand position
-    if (auto err = sock_position_command.bind(sockpp::inet_address(config["decoderListenerIP"].as<std::string>(), config["decoderListenerPort"].as<int16_t>())))
-    {
-      BOOST_LOG_TRIVIAL(info) << "UDP socket bind: " << err.error_message();
-    }
+    auto err = sock_position_command.bind(sockpp::inet_address(config["decoderListenerIP"].as<std::string>(), config["decoderListenerPort"].as<int16_t>()));
+    BOOST_LOG_TRIVIAL(debug) << "UDP socket bind: " << err.error_message();
 
     struct args_struct *args = (args_struct *)malloc(sizeof(struct args_struct));
     args->arm = &arm;

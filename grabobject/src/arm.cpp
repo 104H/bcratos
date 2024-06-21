@@ -30,7 +30,7 @@ bool RobotArm::getGrasped()
 void RobotArm::gripObject(const uint8_t extent)
 {
   // scale the extent in the range from 0 to 75
-  const int8_t scaled_extent = extent * 0.75;
+  const int8_t scaled_extent = extent * 1.3;
 
   // convert to string
   std::string cmd = "@AGSM0" + std::to_string(scaled_extent) + "45++++++*\r";
@@ -227,7 +227,7 @@ void RobotArm::reachAndGrasp()
 const float RobotArm::determinePositionFromCommand(const float command)
 {
   float pos = (command * (position_final[2] - position_start[2])) + position_start[2];
-  BOOST_LOG_TRIVIAL(debug) << "New Position: " << pos;
+  BOOST_LOG_TRIVIAL(debug) << "New Arm Position: " << pos;
 
   return pos;
 }
@@ -239,14 +239,13 @@ const float RobotArm::getPosition_d()
 
 void RobotArm::setPosition_d(const float target)
 {
-  BOOST_LOG_TRIVIAL(debug) << "Setting target to: " << target;
+  BOOST_LOG_TRIVIAL(debug) << "Setting arm target to: " << target;
   position_d[2] = target;
 }
 
 void RobotArm::setTargetPosition(const float command)
 {
-  BOOST_LOG_TRIVIAL(debug) << "Received command: " << command;
-
+  BOOST_LOG_TRIVIAL(debug) << "Received arm command: " << command;
   float pos = determinePositionFromCommand(command);
 
   // if the command position is a change of 5% or more, then move only by 5%
@@ -269,7 +268,7 @@ void RobotArm::setTargetPosition(const float command)
 
 void RobotArm::isGraspComplete(const uint8_t &thumb, const uint8_t &mrl, const uint8_t &index)
 {
-  // grasp is complete if the motor positions are above 150
+  // grasp is complete if the motor positions are above 100
   uint16_t threshold = 100;
   grasped = (thumb > threshold) & (mrl > threshold) & (index > threshold);
   BOOST_LOG_TRIVIAL(debug) << "Hand closed: " << grasped;

@@ -34,7 +34,7 @@ private:
 
   const std::array<std::array<double, 7>, 3> movement_angles = {{
       {0, M_PI_4, 0, -0.5 * M_PI, 0, 0.9 * M_PI, M_PI_2},        // reach
-      {0, 0.8 * M_PI_4, 0, -0.45 * M_PI, 0, 0.9 * M_PI, M_PI_2}, // lift [initial position]
+      {0, 0.8 * M_PI_4, 0, -0.485 * M_PI, 0, 0.9 * M_PI, M_PI_2}, // lift [initial position]
   }};
 
   const std::array<double, 3> movement_duration = {1.0, 1.0};
