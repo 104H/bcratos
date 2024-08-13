@@ -30,10 +30,11 @@ bool RobotArm::getGrasped()
 void RobotArm::gripObject(const uint8_t extent)
 {
   // scale the extent in the range from 0 to 75
-  const int8_t scaled_extent = extent * 1.3;
+  //const int8_t scaled_extent = extent * 1.3;
+  const int8_t scaled_extent = extent;
 
   // convert to string
-  std::string cmd = "@AGSM0" + std::to_string(scaled_extent) + "45++++++*\r";
+  std::string cmd = "@AGeC0" + std::to_string(scaled_extent) + "045+++++*\r";
   BOOST_LOG_TRIVIAL(debug) << "Command to Hand: " << cmd;
 
   // write to the hand serial port
