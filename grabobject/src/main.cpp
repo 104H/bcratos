@@ -147,8 +147,8 @@ int main(int argc, char **argv)
     args->sock_position_command = &sock_position_command;
 
     // spawn new thread for reading the state of the hand
-    // pthread_create(
-    //     &handstatePropagation, NULL, &handStateThread, args);
+    pthread_create(
+        &handstatePropagation, NULL, &handStateThread, args);
 
     // spawn new thread for controlling the state of the hand
     pthread_create(
@@ -157,8 +157,9 @@ int main(int argc, char **argv)
     // start cartesian control loop
     arm.reachAndGrasp();
 
+    // join the threads at the end of the control loop
     pthread_join(handpositionCommand, NULL);
-    // pthread_join(handstatePropagation, NULL);
+    pthread_join(handstatePropagation, NULL);
   }
   catch (const std::exception &e)
   {

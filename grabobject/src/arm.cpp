@@ -30,7 +30,6 @@ bool RobotArm::getGrasped()
 void RobotArm::gripObject(const uint8_t extent)
 {
   // scale the extent in the range from 0 to 75
-  //const int8_t scaled_extent = extent * 1.3;
   const int8_t scaled_extent = extent;
 
   // convert to string
@@ -253,11 +252,13 @@ void RobotArm::setTargetPosition(const float command)
   float threshold_high = 1.05 * getPosition_d();
   float threshold_low = 0.95 * getPosition_d();
 
+  // if the commanded position is larger than the high pass threshold, then over write the variable with the threshold value
   if (pos > threshold_high)
   {
     pos = threshold_high;
     BOOST_LOG_TRIVIAL(debug) << "Applying high pass filer. Commanded position is: " << pos;
   }
+  // if the commanded position is smaller than the low pass threshold, then over write the variable with the threshold value
   else if (pos < threshold_low)
   {
     pos = threshold_low;
