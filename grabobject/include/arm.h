@@ -30,11 +30,11 @@ private:
   Eigen::Vector3d position_d;
   Eigen::Quaterniond orientation_d;
   Eigen::Vector3d position_start;
-  Eigen::Vector3d position_final = {0.84, -0.02, 0.18};
+  Eigen::Vector3d position_final = {0.84, -0.02, 0.19};
 
   const std::array<std::array<double, 7>, 3> movement_angles = {{
       {0, M_PI_4, 0, -0.5 * M_PI, 0, 0.9 * M_PI, M_PI_2},        // reach
-      {0, 0.8 * M_PI_4, 0, -0.45 * M_PI, 0, 0.9 * M_PI, M_PI_2}, // lift [initial position]
+      {0, 0.8 * M_PI_4, 0, -0.485 * M_PI, 0, 0.9 * M_PI, M_PI_2}, // lift [initial position]
   }};
 
   const std::array<double, 3> movement_duration = {1.0, 1.0};
@@ -54,6 +54,9 @@ private:
    * Takes the thumb, middle ring and little, and index finger position to determine if they are in a grasped state
    */
   void isGraspComplete(const uint8_t &thumb, const uint8_t &mrl, const uint8_t &index);
+
+  void setPosition_d(const float target);
+  const float getPosition_d();
 
 public:
   /**
@@ -90,7 +93,6 @@ public:
   void setDefaultBehavior();
   void reachAndGrasp();
   const float determinePositionFromCommand(const float command);
-  void setPosition_d(const float target);
   void setTargetPosition(const float command);
 
   /**

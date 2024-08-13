@@ -23,12 +23,11 @@ struct args_struct
   args_struct();
 };
 
-void *handStateThread(void *args)
+void *handControlThread(void *args)
 {
   std::cout << "Spawning command receiver thread" << std::endl;
 
   args_struct *a = (args_struct *)args;
-  sockpp::udp_socket sock_behaviour, sock_stimulator;
   uint16_t msg, handCommand, armCommand;
 
   while (1)
@@ -36,11 +35,11 @@ void *handStateThread(void *args)
     // recieve command message from behaviour pc
     auto n = a->sock_position_command->recv(&msg, sizeof(msg));
 
-    // the 8 least significant bits out of total 16 are the extent of the arm's reach
-    armCommand = (uint8_t) msg;
+    // the 8 most significant bits out of total 16 are the extent of the arm's reach
+    armCommand = msg >> 8;
 
-    // the 8 most significant bits out of total 16 are the extent of the hand's closure
-    handCommand = msg >> 8;
+    // the 8 least significant bits out of total 16 are the extent of the hand's closure
+    handCommand = (uint8_t)msg;
 
     BOOST_LOG_TRIVIAL(debug) << "Received message: " << msg;
     BOOST_LOG_TRIVIAL(debug) << "Command to hand: " << handCommand;
@@ -50,21 +49,31 @@ void *handStateThread(void *args)
     a->arm->gripObject(handCommand);
 
     // position the arm according to the command
-    a->arm->setTargetPosition((float)armCommand / 100);
+    a->arm->setTargetPosition((float)armCommand / 180);
+  }
 
-    // update the state variable for the hand
-    a->arm->updateState();
-    std::string state = a->arm->getGrasped() ? "1" : "0";
+  return NULL;
+}
 
-    if (auto err = sock_behaviour.send_to(state, *(a->behaviour_addr)))
-    {
-      BOOST_LOG_TRIVIAL(debug) << "Sending hand state to behaviour computer: " << err.error_message();
-    }
+void *handStateThread(void *args)
+{
+  std::cout << "Spawning state sender thread" << std::endl;
 
-    if (auto err = sock_stimulator.send_to(state, *(a->stimulator_addr)))
-    {
-      BOOST_LOG_TRIVIAL(debug) << "Sending hand state to stimulator computer: " << err.error_message();
-    }
+  args_struct *a = (args_struct *)args;
+  sockpp::udp_socket sock_behaviour, sock_stimulator;
+
+  // update the state variable for the hand
+  a->arm->updateState();
+  std::string state = a->arm->getGrasped() ? "1" : "0";
+
+  if (auto err = sock_behaviour.send_to(state, *(a->behaviour_addr)))
+  {
+    BOOST_LOG_TRIVIAL(debug) << "Sending hand state to behaviour computer: " << err.error_message();
+  }
+
+  if (auto err = sock_stimulator.send_to(state, *(a->stimulator_addr)))
+  {
+    BOOST_LOG_TRIVIAL(debug) << "Sending hand state to stimulator computer: " << err.error_message();
   }
 
   return NULL;
@@ -80,7 +89,7 @@ int main(int argc, char **argv)
   BOOST_LOG_TRIVIAL(info) << "Start";
 
   uint16_t msg;
-  pthread_t handpositionCommand;
+  pthread_t handpositionCommand, handstatePropagation;
 
   YAML::Node config = YAML::LoadFile("config.yaml");
 
@@ -128,10 +137,8 @@ int main(int argc, char **argv)
     sockpp::inet_address stimulator_addr(config["stimulatorListenerIP"].as<std::string>(), config["stimulatorListenerPort"].as<int16_t>());
 
     // speaker socket to hand position
-    if (auto err = sock_position_command.bind(sockpp::inet_address(config["decoderListenerIP"].as<std::string>(), config["decoderListenerPort"].as<int16_t>())))
-    {
-      BOOST_LOG_TRIVIAL(info) << "UDP socket bind: " << err.error_message();
-    }
+    auto err = sock_position_command.bind(sockpp::inet_address(config["decoderListenerIP"].as<std::string>(), config["decoderListenerPort"].as<int16_t>()));
+    BOOST_LOG_TRIVIAL(debug) << "UDP socket bind: " << err.error_message();
 
     struct args_struct *args = (args_struct *)malloc(sizeof(struct args_struct));
     args->arm = &arm;
@@ -141,12 +148,18 @@ int main(int argc, char **argv)
 
     // spawn new thread for reading the state of the hand
     pthread_create(
-        &handpositionCommand, NULL, &handStateThread, args);
+        &handstatePropagation, NULL, &handStateThread, args);
+
+    // spawn new thread for controlling the state of the hand
+    pthread_create(
+        &handpositionCommand, NULL, &handControlThread, args);
 
     // start cartesian control loop
     arm.reachAndGrasp();
 
+    // join the threads at the end of the control loop
     pthread_join(handpositionCommand, NULL);
+    pthread_join(handstatePropagation, NULL);
   }
   catch (const std::exception &e)
   {
