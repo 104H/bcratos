@@ -62,18 +62,21 @@ void *handStateThread(void *args)
   args_struct *a = (args_struct *)args;
   sockpp::udp_socket sock_behaviour, sock_stimulator;
 
-  // update the state variable for the hand
-  a->arm->updateState();
-  std::string state = a->arm->getGrasped() ? "1" : "0";
-
-  if (auto err = sock_behaviour.send_to(state, *(a->behaviour_addr)))
+  while(1)
   {
-    BOOST_LOG_TRIVIAL(debug) << "Sending hand state to behaviour computer: " << err.error_message();
-  }
+    // update the state variable for the hand
+    a->arm->updateState();
+    std::string state = a->arm->getGrasped() ? "1" : "0";
 
-  if (auto err = sock_stimulator.send_to(state, *(a->stimulator_addr)))
-  {
-    BOOST_LOG_TRIVIAL(debug) << "Sending hand state to stimulator computer: " << err.error_message();
+    if (auto err = sock_behaviour.send_to(state, *(a->behaviour_addr)))
+    {
+      BOOST_LOG_TRIVIAL(debug) << "Sending hand state to behaviour computer: " << err.error_message();
+    }
+
+    if (auto err = sock_stimulator.send_to(state, *(a->stimulator_addr)))
+    {
+      BOOST_LOG_TRIVIAL(debug) << "Sending hand state to stimulator computer: " << err.error_message();
+    }
   }
 
   return NULL;
