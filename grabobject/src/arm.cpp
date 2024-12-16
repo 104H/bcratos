@@ -16,7 +16,7 @@ RobotArm::RobotArm(const std::string hand_serial_port, const std::string arm_hos
   initial_transform = Eigen::Matrix4d::Map(initial_state.O_T_EE.data());
 
   // turn on streaming for finger positions
-  hand.Write("@ADP1-----------*\r");
+  hand.Write("@ADA1-----------*\r");
 
   // set the grasped variable to false because hand is open
   grasped = false;
@@ -29,21 +29,18 @@ bool RobotArm::getGrasped()
 
 void RobotArm::gripObject(const uint8_t extent)
 {
-  // scale the extent in the range from 0 to 75
-  const int8_t scaled_extent = extent;
-
   // convert to string
-  std::string cmd = "@AGeC0" + std::to_string(scaled_extent) + "045+++++*\r";
+  std::string cmd = "@AGeC0" + std::to_string(extent) + "045+++++*\r";
   BOOST_LOG_TRIVIAL(debug) << "Command to Hand: " << cmd;
 
   // write to the hand serial port
   hand.Write(cmd);
 }
 
-void RobotArm::readoutPosition(bool &read_success, uint8_t &thumb, uint8_t &mrl, uint8_t &index)
+void RobotArm::readoutPosition(bool &read_success, uint16_t &thumb, uint16_t &mrl, uint16_t &index)
 {
   // regular expression for detecting 5 consecutive digits occurring thrice for the thumb, mrl and index positions respectively
-  std::regex rgx("enc : [\\+\\-](\\d{5}) ; [\\+\\-](\\d{5}) ; [\\+\\-](\\d{5}) ; [\\+\\-]\\d{5}\\n", std::regex_constants::ECMAScript);
+  std::regex rgx("adc : [\\+\\-]\\d{5} ; [\\+\\-](\\d{5}) ; [\\+\\-]\\d{5} ; [\\+\\-]\\d{5} ; [\\+\\-](\\d{5}) ; [\\+\\-](\\d{5}) ; [\\+\\-]\\d{5} ; [\\+\\-]\\d{5} ; [\\+\\-](\\d{5}) ; [\\+\\-](\\d{5})", std::regex_constants::ECMAScript);
   std::smatch sm;
 
   // flush the input buffer to get the latest readout
@@ -51,11 +48,11 @@ void RobotArm::readoutPosition(bool &read_success, uint8_t &thumb, uint8_t &mrl,
 
   // readout from the hand
   std::string new_readout;
-  hand.Read(new_readout, 40, 0);
+  hand.Read(new_readout, 100, 0);
 
   // append to has been read out
   full_readout.append(new_readout);
-
+ 
   // search readout with regex
   std::regex_search(full_readout, sm, rgx);
 
@@ -63,11 +60,12 @@ void RobotArm::readoutPosition(bool &read_success, uint8_t &thumb, uint8_t &mrl,
   if (sm.size() > 0)
   {
     // extract thumb, index and mrl motor positions
-    thumb = stoi(sm.str(1));
-    mrl = stoi(sm.str(2));
-    index = stoi(sm.str(3));
+    index = stoi(sm.str(1));
+    thumb = stoi(sm.str(2));
+    mrl = stoi(sm.str(3));
 
-    BOOST_LOG_TRIVIAL(debug) << "Thumb, MRL, Finger Positions: " << static_cast<int16_t>(thumb) << " " << static_cast<int16_t>(mrl) << " " << static_cast<int16_t>(index);
+    BOOST_LOG_TRIVIAL(debug) << "Thumb, MRL, Index Analogue (Force) Inputs: " << static_cast<int16_t>(thumb) << " " << static_cast<int16_t>(mrl) << " " << static_cast<int16_t>(index);
+    BOOST_LOG_TRIVIAL(debug) << "Motor Voltage : " << static_cast<int16_t>(stoi(sm.str(4)));
 
     // clear out the string
     full_readout = "";
@@ -268,18 +266,18 @@ void RobotArm::setTargetPosition(const float command)
   setPosition_d(pos);
 }
 
-void RobotArm::isGraspComplete(const uint8_t &thumb, const uint8_t &mrl, const uint8_t &index)
+void RobotArm::isGraspComplete(const uint16_t &thumb, const uint16_t &mrl, const uint16_t &index)
 {
-  // grasp is complete if the motor positions are above 100
-  uint16_t threshold = 100;
-  grasped = (thumb > threshold) & (mrl > threshold) & (index > threshold);
+  // grasp is complete if the torque sensors sense a value in the range of 900 and 800
+  grasped = (index < 900) and (index > 800);
+  std::cout << "Hand closed: " << grasped << "  index=" << index << std::endl;
   BOOST_LOG_TRIVIAL(debug) << "Hand closed: " << grasped;
 }
 
 void RobotArm::updateState()
 {
   bool read_success;
-  uint8_t thumb, mrl, index;
+  uint16_t thumb, mrl, index;
   readoutPosition(read_success, thumb, mrl, index);
 
   // if the readout was successful, update the state of `grasped` according to the new readout

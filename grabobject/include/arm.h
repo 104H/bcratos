@@ -48,12 +48,12 @@ private:
    * uint8_t mrl : position of the thumb from 0 to 255 where 0 is fully extended and 255 is fully flexed
    * uint8_t index : position of the thumb from 0 to 255 where 0 is fully extended and 255 is fully flexed
    */
-  void readoutPosition(bool &read_success, uint8_t &thumb, uint8_t &mrl, uint8_t &index);
+  void readoutPosition(bool &read_success, uint16_t &thumb, uint16_t &mrl, uint16_t &index);
 
   /**
    * Takes the thumb, middle ring and little, and index finger position to determine if they are in a grasped state
    */
-  void isGraspComplete(const uint8_t &thumb, const uint8_t &mrl, const uint8_t &index);
+  void isGraspComplete(const uint16_t &thumb, const uint16_t &mrl, const uint16_t &index);
 
   void setPosition_d(const float target);
   const float getPosition_d();
