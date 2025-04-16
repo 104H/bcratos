@@ -70,12 +70,12 @@ void *handStateThread(void *args)
 
     if (auto err = sock_behaviour.send_to(state, *(a->behaviour_addr)))
     {
-      BOOST_LOG_TRIVIAL(debug) << "Sending hand state to behaviour computer: " << err.error_message();
+      BOOST_LOG_TRIVIAL(debug) << "Sending hand state to behaviour computer: " << err;
     }
 
     if (auto err = sock_stimulator.send_to(state, *(a->stimulator_addr)))
     {
-      BOOST_LOG_TRIVIAL(debug) << "Sending hand state to stimulator computer: " << err.error_message();
+      BOOST_LOG_TRIVIAL(debug) << "Sending hand state to stimulator computer: " << err;
     }
   }
 
@@ -141,7 +141,7 @@ int main(int argc, char **argv)
 
     // speaker socket to hand position
     auto err = sock_position_command.bind(sockpp::inet_address(config["decoderListenerIP"].as<std::string>(), config["decoderListenerPort"].as<int16_t>()));
-    BOOST_LOG_TRIVIAL(debug) << "UDP socket bind: " << err.error_message();
+    BOOST_LOG_TRIVIAL(debug) << "UDP socket bind: " << err;
 
     struct args_struct *args = (args_struct *)malloc(sizeof(struct args_struct));
     args->arm = &arm;
