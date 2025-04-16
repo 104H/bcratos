@@ -10,3 +10,7 @@ mkdir build
 cd build
 cmake ..
 cmake --build .
+
+export LD_LIBRARY_PATH=/opt/openrobots/lib:$LD_LIBRARY_PATH
+export LIBRARY_PATH=/opt/openrobots/lib:$LIBRARY_PATH
+export CPLUS_INCLUDE_PATH=/opt/openrobots/include:$CPLUS_INCLUDE_PATH

@@ -6,6 +6,8 @@ project(bcratos_grabobject)
 
 set(CMAKE_CXX_FLAGS "-DBOOST_LOG_DYN_LINK -lboost_log_setup")
 
+link_directories(/opt/openrobots/lib)
+
 include(FetchContent)
 
 find_package(Franka REQUIRED)
@@ -42,3 +44,9 @@ target_link_libraries(move_arm PRIVATE ${SERIAL_LDFLAGS})
 target_link_libraries(move_arm PRIVATE sockpp)
 target_link_libraries(move_arm PRIVATE yaml-cpp::yaml-cpp)
 target_link_libraries(move_arm PRIVATE ${Boost_LIBRARIES})
+target_link_libraries(move_arm PRIVATE pinocchio_default)
+target_link_libraries(move_arm PRIVATE pinocchio_parsers)
+
+set_target_properties(move_arm PROPERTIES
+  INSTALL_RPATH "/opt/openrobots/lib"
+)
