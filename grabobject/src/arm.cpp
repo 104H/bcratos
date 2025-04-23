@@ -269,7 +269,7 @@ void RobotArm::setTargetPosition(const float command)
 void RobotArm::isGraspComplete(const uint16_t &thumb, const uint16_t &mrl, const uint16_t &index)
 {
   // grasp is complete if the torque sensors sense a value in the range of 900 and 800
-  grasped = (index < 900) and (index > 800);
+  grasped = (index < 920);
   std::cout << "Hand closed: " << grasped << "  index=" << index << std::endl;
   BOOST_LOG_TRIVIAL(debug) << "Hand closed: " << grasped;
 }
