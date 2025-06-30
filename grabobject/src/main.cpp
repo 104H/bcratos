@@ -66,14 +66,17 @@ void *handStateThread(void *args)
   {
     // update the state variable for the hand
     a->arm->updateState();
-    std::string state = a->arm->getGrasped() ? "1" : "0";
+    std::string handstate = a->arm->getGrasped() ? "1," : "0,";
+    std::string armstate = std::to_string(a->arm->getPosition_d());
+
+    std::string state = handstate.append(armstate);
 
     if (auto err = sock_behaviour.send_to(state, *(a->behaviour_addr)))
     {
       BOOST_LOG_TRIVIAL(debug) << "Sending hand state to behaviour computer: " << err;
     }
 
-    if (auto err = sock_stimulator.send_to(state, *(a->stimulator_addr)))
+    if (auto err = sock_stimulator.send_to(state.substr(0, 1), *(a->stimulator_addr)))
     {
       BOOST_LOG_TRIVIAL(debug) << "Sending hand state to stimulator computer: " << err;
     }

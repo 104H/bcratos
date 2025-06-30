@@ -56,7 +56,6 @@ private:
   void isGraspComplete(const uint16_t &thumb, const uint16_t &mrl, const uint16_t &index);
 
   void setPosition_d(const float target);
-  const float getPosition_d();
 
 public:
   /**
@@ -99,4 +98,5 @@ public:
    * Readout position of the hand, determine its state and update the variable grasped accordingly
    */
   void updateState();
+  const float getPosition_d();
 };
